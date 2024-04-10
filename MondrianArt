@@ -1,0 +1,365 @@
+package edu.westga.cs3151.mondrian;
+
+import java.util.Optional;
+import java.util.Random;
+import javafx.application.Application;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Paint;
+import javafx.scene.paint.Stop;
+import javafx.stage.Stage;
+
+/**
+ * Class MondrianArt
+ * Generates Mondrian-style art using JavaFX.
+ * 
+ * @author Jacob Baker
+ * @version Spring 2024
+ */
+public class MondrianArt extends Application {
+    // Constants for the size of the canvas and the minimum and maximum region sizes
+    public static final int WIDTH = 600;
+    public static final int HEIGHT = 600;
+    public static final int MIN_REGION_SIZE = 5;
+    public static final int MAX_REGION_SIZE = 600;
+    // Random object for generating random values
+    private Random random;
+
+    @Override
+    /**
+     * Starts the JavaFX application.
+     * 
+     * @param primaryStage The primary stage of the application
+     * 
+     * @precondition None
+     * @postcondition JavaFX application is started with the generated Mondrian art displayed
+     */
+    public void start(final Stage primaryStage) {
+        try {
+            // Display dialog to get the minimum region size
+            final int minRegionSize = this.displayDialog();
+
+            // Create canvas and graphics context
+            final Canvas canvas = new Canvas(WIDTH, HEIGHT);
+            final GraphicsContext context = canvas.getGraphicsContext2D();
+            this.random = new Random();
+
+            // Generate Mondrian art recursively
+            this.createMondrianArt(0, 0, WIDTH, HEIGHT, minRegionSize, context);
+
+            // Set up scene and stage
+            final Group group = new Group();
+            group.getChildren().add(canvas);
+            final Scene scene = new Scene(new BorderPane(group), WIDTH, HEIGHT);
+            primaryStage.setTitle("Mondrian Art by Firstname Lastname");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+
+        } catch (final Exception exc) {
+            exc.printStackTrace();
+        }
+    }
+
+    /**
+     * Entry point for the application.
+     * 
+     * @param args Not used
+     * 
+     * @precondition None
+     * @postcondition None
+     */
+    public static void main(final String[] args) {
+        launch(args);
+    }
+
+    /**
+     * Displays a dialog to get user input for the minimum region size.
+     * 
+     * @return The minimum region size entered by the user
+     * 
+     * @precondition None
+     * @postcondition Minimum region size is obtained from the user input
+     */
+    private int displayDialog() {
+        final TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Minimum Region Size Dialog");
+        dialog.setHeaderText("Please enter the minimum region size (Can't be lower than " + MIN_REGION_SIZE + " or " + MAX_REGION_SIZE + "):");
+        dialog.setContentText("Minimum Region Size:");
+        final Optional<String> result = dialog.showAndWait();
+        if (result.isPresent()) {
+            try {
+                final int minRegionSize = Integer.parseInt(result.get());
+                if (minRegionSize >= MIN_REGION_SIZE && minRegionSize <= MAX_REGION_SIZE) {
+                    return minRegionSize;
+                } else {
+                    System.out.println("Minimum region size cannot be less than " + MIN_REGION_SIZE + " and less than " + MAX_REGION_SIZE);
+                    return this.displayDialog();
+                }
+            } catch (final NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid integer.");
+                return this.displayDialog();
+            }
+        }
+        return MIN_REGION_SIZE;
+    }
+
+    /**
+     * Recursively creates Mondrian-style art.
+     * 
+     * @param x            The x-coordinate of the top-left corner of the region
+     * @param y            The y-coordinate of the top-left corner of the region
+     * @param width        The width of the region
+     * @param height       The height of the region
+     * @param minRegionSize The minimum size of the region
+     * @param context      The graphics context to draw on
+     * 
+     * @precondition Width and height must be greater than minRegionSize
+     * @postcondition Mondrian-style art is generated recursively
+     */
+    private void createMondrianArt(final int x, final int y, final int width, final int height, final int minRegionSize, final GraphicsContext context) {
+        if (width > minRegionSize && height > minRegionSize) {
+            final boolean splitHorizontal = this.random.nextBoolean();
+            final boolean splitVertical = this.random.nextBoolean();
+            if (splitHorizontal && splitVertical) {
+                this.splitBothHorizontallyAndVertically(x, y, width, height, minRegionSize, context);
+            } else if (splitHorizontal) {
+                this.splitHorizontally(x, y, width, height, minRegionSize, context);
+            } else if (splitVertical) {
+                this.splitVertically(x, y, width, height, minRegionSize, context);
+            } else {
+                this.fillOrDivideSquare(x, y, width, height, minRegionSize, context);
+            }
+        }
+    }
+
+    /**
+     * Splits the region both horizontally and vertically.
+     * 
+     * @param x            The x-coordinate of the top-left corner of the region
+     * @param y            The y-coordinate of the top-left corner of the region
+     * @param width        The width of the region
+     * @param height       The height of the region
+     * @param minRegionSize The minimum size of the region
+     * @param context      The graphics context to draw on
+     * 
+     * @precondition Width and height must be greater than minRegionSize
+     * @postcondition Region is split both horizontally and vertically
+     */
+    private void splitBothHorizontallyAndVertically(int x, int y, int width, int height, int minRegionSize, GraphicsContext context) {
+        final int splitX = x + this.random.nextInt(width);
+        final int splitY = y + this.random.nextInt(height);
+        this.createMondrianArt(x, y, splitX - x, splitY - y, minRegionSize, context);
+        this.createMondrianArt(splitX, y, x + width - splitX, splitY - y, minRegionSize, context);
+        this.createMondrianArt(x, splitY, splitX - x, y + height - splitY, minRegionSize, context);
+        this.createMondrianArt(splitX, splitY, x + width - splitX, y + height - splitY, minRegionSize, context);
+        context.setStroke(Color.BLACK);
+        context.setLineWidth(2);
+        context.strokeLine(x, splitY, x + width, splitY);
+        context.strokeLine(splitX, y, splitX, y + height);
+    }
+
+    /**
+     * Splits the region horizontally.
+     * 
+     * @param x            The x-coordinate of the top-left corner of the region
+     * @param y            The y-coordinate of the top-left corner of the region
+     * @param width        The width of the region
+     * @param height       The height of the region
+     * @param minRegionSize The minimum size of the region
+     * @param context      The graphics context to draw on
+     * 
+     * @precondition Width and height must be greater than minRegionSize
+     * @postcondition Region is split horizontally
+     */
+    private void splitHorizontally(int x, int y, int width, int height, int minRegionSize, GraphicsContext context) {
+        final boolean splitInTwo = this.random.nextBoolean();
+        if (splitInTwo) {
+            final int splitY = y + this.random.nextInt(height);
+            this.createMondrianArt(x, y, width, splitY - y, minRegionSize, context);
+            this.createMondrianArt(x, splitY, width, y + height - splitY, minRegionSize, context);
+            context.setStroke(Color.BLACK);
+            context.setLineWidth(2);
+            context.strokeLine(x, splitY, x + width, splitY);
+        } else {
+            final int splitY1 = y + height / 3;
+            final int splitY2 = y + (2 * height) / 3;
+            this.createMondrianArt(x, y, width, splitY1 - y, minRegionSize, context);
+            this.createMondrianArt(x, splitY1, width, splitY2 - splitY1, minRegionSize, context);
+            this.createMondrianArt(x, splitY2, width, y + height - splitY2, minRegionSize, context);
+            context.setStroke(Color.BLACK);
+            context.setLineWidth(2);
+            context.strokeLine(x, splitY1, x + width, splitY1);
+            context.strokeLine(x, splitY2, x + width, splitY2);
+        }
+    }
+
+    /**
+     * Splits the region vertically.
+     * 
+     * @param x            The x-coordinate of the top-left corner of the region
+     * @param y            The y-coordinate of the top-left corner of the region
+     * @param width        The width of the region
+     * @param height       The height of the region
+     * @param minRegionSize The minimum size of the region
+     * @param context      The graphics context to draw on
+     * 
+     * @precondition Width and height must be greater than minRegionSize
+     * @postcondition Region is split vertically
+     */
+    private void splitVertically(int x, int y, int width, int height, int minRegionSize, GraphicsContext context) {
+        final boolean splitInTwo = this.random.nextBoolean();
+        if (splitInTwo) {
+            final int splitX = x + this.random.nextInt(width);
+            this.createMondrianArt(x, y, splitX - x, height, minRegionSize, context);
+            this.createMondrianArt(splitX, y, x + width - splitX, height, minRegionSize, context);
+            context.setStroke(Color.BLACK);
+            context.setLineWidth(2);
+            context.strokeLine(splitX, y, splitX, y + height);
+        } else {
+            final int splitX1 = x + width / 3;
+            final int splitX2 = x + (2 * width) / 3;
+            this.createMondrianArt(x, y, splitX1 - x, height, minRegionSize, context);
+            this.createMondrianArt(splitX1, y, splitX2 - splitX1, height, minRegionSize, context);
+            this.createMondrianArt(splitX2, y, x + width - splitX2, height, minRegionSize, context);
+            context.setStroke(Color.BLACK);
+            context.setLineWidth(2);
+            context.strokeLine(splitX1, y, splitX1, y + height);
+            context.strokeLine(splitX2, y, splitX2, y + height);
+        }
+    }
+
+    /**
+     * Fills or divides the square region.
+     * 
+     * @param x            The x-coordinate of the top-left corner of the region
+     * @param y            The y-coordinate of the top-left corner of the region
+     * @param width        The width of the region
+     * @param height       The height of the region
+     * @param minRegionSize The minimum size of the region
+     * @param context      The graphics context to draw on
+     * 
+     * @precondition Width and height must be greater than minRegionSize
+     * @postcondition Square region is filled or divided
+     */
+    private void fillOrDivideSquare(int x, int y, int width, int height, int minRegionSize, GraphicsContext context) {
+        final double splitInTwoProbability = 0.75;
+        if (this.random.nextDouble() >= splitInTwoProbability) {
+            this.drawSplitLine(x, y, width, height, context);
+        } else {
+            this.drawFillOrPattern(x, y, width, height, context);
+        }
+    }
+
+    /**
+     * Draws a split line within the square region.
+     * 
+     * @param x        The x-coordinate of the top-left corner of the region
+     * @param y        The y-coordinate of the top-left corner of the region
+     * @param width    The width of the region
+     * @param height   The height of the region
+     * @param context  The graphics context to draw on
+     * 
+     * @precondition Width and height must be greater than 0
+     * @postcondition Split line is drawn within the square region
+     */
+    private void drawSplitLine(int x, int y, int width, int height, GraphicsContext context) {
+        int cornerX = x;
+        int cornerY = y;
+        switch (this.random.nextInt(4)) {
+            case 0:
+                cornerX = x;
+                cornerY = y;
+                break;
+            case 1:
+                cornerX = x + width;
+                cornerY = y;
+                break;
+            case 2:
+                cornerX = x;
+                cornerY = y + height;
+                break;
+            case 3:
+                cornerX = x + width;
+                cornerY = y + height;
+                break;
+            default:
+                break;
+        }
+        context.setStroke(Color.BLACK);
+        context.setLineWidth(2);
+        context.strokeLine(x, y, cornerX, cornerY);
+    }
+
+    /**
+     * Draws a fill or pattern within the square region.
+     * 
+     * @param x        The x-coordinate of the top-left corner of the region
+     * @param y        The y-coordinate of the top-left corner of the region
+     * @param width    The width of the region
+     * @param height   The height of the region
+     * @param context  The graphics context to draw on
+     * 
+     * @precondition Width and height must be greater than 0
+     * @postcondition Fill or pattern is drawn within the square region
+     */
+    private void drawFillOrPattern(int x, int y, int width, int height, GraphicsContext context) {
+        if (this.random.nextDouble() < 0.33) {
+            final Color color = this.getRandomColor();
+            context.setFill(color);
+            context.fillRect(x, y, width, height);
+        } else {
+            final Paint pattern = this.getRandomPattern();
+            context.setFill(pattern);
+            context.fillRect(x, y, width, height);
+        }
+    }
+
+    /**
+     * Generates a random RGB color
+     *
+     * @return A randomly selected RGB color
+     * 
+     * @precondition None
+     * @postcondition A randomly selected RGB color is returned
+     */
+    private Color getRandomColor() {
+        final int red = this.random.nextInt(256);
+        final int green = this.random.nextInt(256);
+        final int blue = this.random.nextInt(256);
+        return Color.rgb(red, green, blue);
+    }
+
+    /**
+     * Generates a random color or pattern.
+     * 
+     * @return A randomly selected color or pattern
+     * 
+     * @precondition None
+     * @postcondition A randomly selected color or pattern is returned
+     */
+    private Paint getRandomPattern() {
+        final double solidColorProbability = 0.65;
+        if (this.random.nextDouble() < solidColorProbability) {
+            final Color[] solidColors = { Color.RED, Color.YELLOW, Color.BLUE };
+            return solidColors[this.random.nextInt(solidColors.length)];
+        } else {
+            final int numberOfColors = this.random.nextInt(10) + 1;
+            final Stop[] stops = new Stop[numberOfColors];
+            for (int i = 0; i < numberOfColors; i++) {
+                final int red = this.random.nextInt(256);
+                final int green = this.random.nextInt(256);
+                final int blue = this.random.nextInt(256);
+                final Color color = Color.rgb(red, green, blue);
+                stops[i] = new Stop(i * 1.0 / (numberOfColors - 1), color);
+            }
+            return new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, stops);
+        }
+    }
+}
